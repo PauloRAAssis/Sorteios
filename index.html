@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sorteio da live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #e9eef5;
+    --surface: #f8fafd;
+    --ink: #12203a;
+    --muted: #55637c;
+    --line: #c6d0e0;
+    --accent: #2146f0;
+    --accent-ink: #ffffff;
+    --ticket: #ffd23f;
+    --ticket-ink: #12203a;
+    --danger: #b3261e;
+    --ok: #17703a;
+    --display: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+    --body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1626;
+      --surface: #17213a;
+      --ink: #e8edf8;
+      --muted: #9aa8c4;
+      --line: #2c3a5c;
+      --accent: #7c93ff;
+      --accent-ink: #0b1226;
+      --danger: #ff8a80;
+      --ok: #6fd69a;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 400 16px/1.55 var(--body);
+  }
+  main { max-width: 860px; margin: 0 auto; padding: 40px 20px 80px; }
+  h1, h2 { font-family: var(--display); margin: 0; line-height: 1.1; letter-spacing: -0.01em; }
+  h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; }
+  h2 { font-size: 1.4rem; font-weight: 800; }
+  .lead { color: var(--muted); max-width: 56ch; margin: 12px 0 0; }
+
+  section { margin-top: 44px; padding-top: 28px; border-top: 2px solid var(--ink); }
+  .step-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 18px; }
+  .step-num {
+    font-family: var(--display); font-weight: 800; font-size: 1.4rem;
+    color: var(--accent);
+  }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; }
+  .grid .full { grid-column: 1 / -1; }
+  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+
+  label { display: block; font-weight: 600; font-size: 0.92rem; margin-bottom: 6px; }
+  .hint { color: var(--muted); font-size: 0.85rem; margin: 6px 0 0; }
+  input[type="text"], input[type="password"], input[type="search"], select {
+    width: 100%; padding: 11px 12px; font: inherit; color: var(--ink);
+    background: var(--surface); border: 1.5px solid var(--line); border-radius: 6px;
+  }
+  .with-btn { display: flex; gap: 8px; }
+  .with-btn input { flex: 1; min-width: 0; }
+  .check { display: flex; align-items: center; gap: 10px; font-weight: 400; margin: 0; cursor: pointer; }
+  .check input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
+
+  button {
+    font: 600 1rem var(--body); cursor: pointer; border-radius: 6px;
+    padding: 11px 18px; border: 1.5px solid var(--ink); background: transparent; color: var(--ink);
+  }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  button.big { font-size: 1.15rem; padding: 14px 28px; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  details { margin-top: 10px; color: var(--muted); font-size: 0.92rem; }
+  details summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+  details ol { margin: 8px 0 0; padding-left: 20px; }
+
+  .status { margin-top: 16px; min-height: 1.5em; font-weight: 500; }
+  .status[data-kind="error"] { color: var(--danger); }
+  .status[data-kind="ok"] { color: var(--ok); }
+  .status[data-kind="info"] { color: var(--muted); }
+
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+  .count { font-family: var(--display); font-weight: 800; font-size: 2.2rem; line-height: 1; }
+  .count small { font: 400 0.95rem var(--body); color: var(--muted); margin-left: 8px; }
+  .toolbar input[type="search"] { max-width: 260px; }
+
+  .people { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; max-height: 280px; overflow-y: auto; }
+  .people li {
+    display: flex; align-items: center; gap: 6px; padding: 4px 4px 4px 12px;
+    background: var(--surface); border: 1.5px dashed var(--line); border-radius: 6px; font-size: 0.92rem;
+  }
+  .people button {
+    padding: 0 8px; border: none; font-size: 1.1rem; line-height: 1.6; color: var(--muted);
+  }
+  .people button:hover { color: var(--danger); }
+  .empty { color: var(--muted); margin: 0; }
+
+  .draw-row { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; }
+
+  .ticket {
+    margin-top: 24px; padding: 34px 56px; text-align: center; min-height: 150px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    color: var(--ticket-ink);
+    background:
+      radial-gradient(circle at 0 50%, transparent 0 16px, var(--ticket) 16.5px) left / 51% 100% no-repeat,
+      radial-gradient(circle at 100% 50%, transparent 0 16px, var(--ticket) 16.5px) right / 51% 100% no-repeat;
+  }
+  .ticket .label { font-weight: 600; font-size: 0.95rem; }
+  .ticket .winner {
+    font-family: var(--display); font-weight: 800; line-height: 1.05;
+    font-size: clamp(1.8rem, 6vw, 3.4rem); overflow-wrap: anywhere;
+  }
+  .ticket a { color: var(--ticket-ink); font-weight: 600; font-size: 0.92rem; }
+  .ticket.idle { background: none; border: 2px dashed var(--line); color: var(--muted); }
+  .ticket.spinning .winner { opacity: 0.75; }
+
+  .history { margin-top: 22px; }
+  .history h3 { font-size: 1rem; margin: 0 0 6px; }
+  .history ol { margin: 0; padding-left: 22px; color: var(--muted); }
+  .history li { padding: 2px 0; }
+  .history li span { color: var(--ink); font-weight: 600; }
+
+  footer { margin-top: 56px; color: var(--muted); font-size: 0.85rem; max-width: 62ch; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Sorteio da live</h1>
+    <p class="lead">Leia o chat de uma live do YouTube, liste quem digitou a palavra-chave e sorteie um participante.</p>
+  </header>
+
+  <section aria-labelledby="t1">
+    <div class="step-head"><span class="step-num">1</span><h2 id="t1">Configurar</h2></div>
+    <div class="grid">
+      <div class="full">
+        <label for="apiKey">Chave da API do YouTube</label>
+        <div class="with-btn">
+          <input type="password" id="apiKey" autocomplete="off" spellcheck="false" placeholder="Cole sua chave aqui">
+          <button type="button" id="toggleKey" aria-pressed="false">Mostrar</button>
+        </div>
+        <p class="check" style="margin-top:10px">
+          <input type="checkbox" id="rememberKey"><label for="rememberKey" style="font-weight:400;margin:0">Lembrar a chave neste navegador</label>
+        </p>
+        <details>
+          <summary>Como criar uma chave (grátis)</summary>
+          <ol>
+            <li>Acesse console.cloud.google.com e crie um projeto.</li>
+            <li>Em “APIs e serviços” &gt; “Biblioteca”, procure e ative a <b>YouTube Data API v3</b>.</li>
+            <li>Em “APIs e serviços” &gt; “Credenciais”, clique em “Criar credenciais” &gt; “Chave de API”.</li>
+            <li>Copie a chave e cole no campo acima.</li>
+          </ol>
+          <p class="hint">A chave fica só no seu navegador e é enviada apenas ao YouTube. Cada chave tem 10.000 unidades de cota por dia; um sorteio usa muito pouco.</p>
+        </details>
+      </div>
+      <div class="full">
+        <label for="liveUrl">Link da live</label>
+        <input type="text" id="liveUrl" autocomplete="off" placeholder="https://www.youtube.com/watch?v=...">
+        <p class="hint">Use o link do vídeo da live (também vale o ID de 11 caracteres). A live precisa estar no ar.</p>
+      </div>
+      <div>
+        <label for="keyword">Palavra-chave</label>
+        <input type="text" id="keyword" autocomplete="off" placeholder="ex.: eu quero">
+        <p class="hint">Maiúsculas, minúsculas e acentos são ignorados.</p>
+      </div>
+      <div>
+        <label for="mode">A mensagem vale quando</label>
+        <select id="mode">
+          <option value="contains">contém a palavra-chave</option>
+          <option value="exact">é exatamente a palavra-chave</option>
+        </select>
+      </div>
+      <div class="full">
+        <label class="check"><input type="checkbox" id="ignoreStaff" checked> Ignorar o dono do canal e os moderadores</label>
+      </div>
+      <div class="full">
+        <button type="button" class="primary" id="loadBtn">Carregar participantes</button>
+      </div>
+    </div>
+    <div class="status" id="status" role="status" aria-live="polite" data-kind="info"></div>
+  </section>
+
+  <section aria-labelledby="t2">
+    <div class="step-head"><span class="step-num">2</span><h2 id="t2">Participantes</h2></div>
+    <div class="toolbar">
+      <div class="count"><span id="count">0</span><small id="countNote">pessoas cadastradas</small></div>
+      <input type="search" id="search" placeholder="Buscar nome" aria-label="Buscar participante">
+    </div>
+    <ul class="people" id="people"></ul>
+    <p class="empty" id="peopleEmpty">Ninguém por aqui ainda. Preencha a configuração e carregue os participantes.</p>
+  </section>
+
+  <section aria-labelledby="t3">
+    <div class="step-head"><span class="step-num">3</span><h2 id="t3">Sortear</h2></div>
+    <div class="draw-row">
+      <button type="button" class="primary big" id="drawBtn" disabled>Sortear</button>
+      <label class="check"><input type="checkbox" id="noRepeat" checked> Não repetir ganhadores</label>
+    </div>
+    <div class="ticket idle" id="ticket" aria-live="polite">
+      <div class="label" id="ticketLabel">O ganhador aparece aqui</div>
+      <div class="winner" id="winner"></div>
+      <a id="winnerLink" href="#" target="_blank" rel="noopener noreferrer" hidden>Ver canal no YouTube</a>
+    </div>
+    <div class="history" id="history" hidden>
+      <h3>Ganhadores</h3>
+      <ol id="historyList"></ol>
+    </div>
+  </section>
+
+  <footer>
+    O sorteio usa números aleatórios do navegador. Para o resultado ser confiável para quem assiste, mostre a lista de participantes na tela antes de sortear. O histórico do chat só fica disponível pela API enquanto a live está no ar.
+  </footer>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const API = 'https://www.googleapis.com/youtube/v3';
+  const MAX_RENDER = 500;
+  const state = { participants: new Map(), winners: [], busy: false };
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  /* ---------- armazenamento da chave (opcional) ---------- */
+  try {
+    const saved = localStorage.getItem('sorteio_api_key');
+    if (saved) { $('apiKey').value = saved; $('rememberKey').checked = true; }
+  } catch (e) { /* armazenamento indisponível: segue sem lembrar */ }
+
+  function persistKey() {
+    try {
+      if ($('rememberKey').checked && $('apiKey').value.trim()) {
+        localStorage.setItem('sorteio_api_key', $('apiKey').value.trim());
+      } else {
+        localStorage.removeItem('sorteio_api_key');
+      }
+    } catch (e) { /* ignora */ }
+  }
+  $('rememberKey').addEventListener('change', persistKey);
+
+  $('toggleKey').addEventListener('click', () => {
+    const input = $('apiKey');
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    $('toggleKey').textContent = show ? 'Ocultar' : 'Mostrar';
+    $('toggleKey').setAttribute('aria-pressed', String(show));
+  });
+
+  /* ---------- utilidades ---------- */
+  function setStatus(msg, kind = 'info') {
+    const el = $('status');
+    el.textContent = msg;
+    el.dataset.kind = kind;
+  }
+
+  function normalize(s) {
+    return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase().replace(/\s+/g, ' ').trim();
+  }
+
+  function extractVideoId(raw) {
+    const s = raw.trim();
+    if (!s) return null;
+    if (/^[\w-]{11}$/.test(s)) return s;
+    try {
+      const u = new URL(/^https?:\/\//i.test(s) ? s : 'https://' + s);
+      const host = u.hostname.replace(/^(www|m)\./, '');
+      if (host === 'youtu.be') return u.pathname.slice(1).split('/')[0] || null;
+      if (host.endsWith('youtube.com')) {
+        const v = u.searchParams.get('v');
+        if (v) return v;
+        const m = u.pathname.match(/^\/(?:live|shorts|embed)\/([\w-]{11})/);
+        if (m) return m[1];
+      }
+    } catch (e) { /* link inválido */ }
+    return null;
+  }
+
+  function randInt(n) {
+    const max = Math.floor(0x100000000 / n) * n;
+    const buf = new Uint32Array(1);
+    let x;
+    do { crypto.getRandomValues(buf); x = buf[0]; } while (x >= max);
+    return x % n;
+  }
+
+  /* ---------- API do YouTube ---------- */
+  function friendlyError(data, status) {
+    const e = (data && data.error) || {};
+    const reason = (e.errors && e.errors[0] && e.errors[0].reason) || '';
+    const msg = e.message || '';
+    if (/API key not valid/i.test(msg) || reason === 'keyInvalid') {
+      return 'Chave de API inválida. Confira se você copiou a chave inteira.';
+    }
+    switch (reason) {
+      case 'accessNotConfigured':
+        return 'A YouTube Data API v3 não está ativada no projeto dessa chave. Ative-a no Google Cloud e tente de novo.';
+      case 'quotaExceeded':
+      case 'rateLimitExceeded':
+        return 'A cota diária dessa chave acabou. Tente novamente amanhã ou use outra chave.';
+      case 'ipRefererBlocked':
+        return 'Essa chave tem restrições que bloqueiam este site. Remova a restrição ou use outra chave.';
+      case 'liveChatDisabled':
+        return 'O chat dessa live está desativado.';
+      case 'liveChatEnded':
+        return 'O chat dessa live já foi encerrado. O sorteio precisa ser feito com a live no ar.';
+      case 'liveChatNotFound':
+        return 'Chat da live não encontrado. Confira o link.';
+      default:
+        return 'O YouTube recusou a consulta (erro ' + status + (msg ? ': ' + msg : '') + ').';
+    }
+  }
+
+  async function apiGet(endpoint, params) {
+    const url = new URL(API + '/' + endpoint);
+    Object.entries(params).forEach(([k, v]) => { if (v != null) url.searchParams.set(k, v); });
+    let res;
+    try {
+      res = await fetch(url);
+    } catch (e) {
+      throw new Error('Não foi possível conectar ao YouTube. Verifique sua internet.');
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(friendlyError(data, res.status));
+    return data;
+  }
+
+  /* ---------- carregar participantes ---------- */
+  async function loadParticipants() {
+    if (state.busy) return;
+    const key = $('apiKey').value.trim();
+    const videoId = extractVideoId($('liveUrl').value);
+    const keywordRaw = $('keyword').value;
+    const keyword = normalize(keywordRaw);
+    const exact = $('mode').value === 'exact';
+    const ignoreStaff = $('ignoreStaff').checked;
+
+    if (!key) return setStatus('Informe a chave da API do YouTube.', 'error');
+    if (!videoId) return setStatus('Não encontrei o ID da live nesse link. Cole o link do vídeo da live.', 'error');
+    if (!keyword) return setStatus('Informe a palavra-chave.', 'error');
+
+    persistKey();
+    setBusy(true);
+    state.participants.clear();
+    state.winners = [];
+    renderHistory();
+    resetTicket();
+    renderPeople();
+
+    try {
+      setStatus('Buscando a live…');
+      const v = await apiGet('videos', { part: 'liveStreamingDetails', id: videoId, key });
+      if (!v.items || !v.items.length) throw new Error('Vídeo não encontrado. Confira o link.');
+      const chatId = v.items[0].liveStreamingDetails && v.items[0].liveStreamingDetails.activeLiveChatId;
+      if (!chatId) throw new Error('Essa live não tem um chat ativo. Ela precisa estar no ar e com o chat ligado.');
+
+      let pageToken;
+      let read = 0;
+      let pages = 0;
+      const startedAt = Date.now();
+      while (pages < 300 && Date.now() - startedAt < 90000) {
+        const d = await apiGet('liveChat/messages', {
+          liveChatId: chatId, part: 'snippet,authorDetails', maxResults: 2000, pageToken, key
+        });
+        pages++;
+        const items = d.items || [];
+        for (const m of items) {
+          read++;
+          const a = m.authorDetails;
+          if (!a || !a.channelId) continue;
+          if (ignoreStaff && (a.isChatOwner || a.isChatModerator)) continue;
+          const text = normalize((m.snippet && m.snippet.displayMessage) || '');
+          if (!text) continue;
+          const hit = exact ? text === keyword : text.includes(keyword);
+          if (hit && !state.participants.has(a.channelId)) {
+            state.participants.set(a.channelId, { id: a.channelId, name: a.displayName || 'Sem nome' });
+          }
+        }
+        setStatus(read + ' mensagens lidas · ' + state.participants.size + ' participantes até agora…');
+        renderPeople();
+        pageToken = d.nextPageToken;
+        // Página quase vazia: já alcançamos o fim do chat.
+        if (!pageToken || items.length < 10) break;
+        await sleep(500);
+      }
+      setStatus(read + ' mensagens lidas · ' + state.participants.size + ' participantes cadastrados.', 'ok');
+    } catch (err) {
+      setStatus(err.message, 'error');
+    } finally {
+      setBusy(false);
+      renderPeople();
+    }
+  }
+
+  function setBusy(b) {
+    state.busy = b;
+    $('loadBtn').disabled = b;
+    $('loadBtn').textContent = b ? 'Carregando…' : 'Carregar participantes';
+    $('drawBtn').disabled = b || state.participants.size === 0;
+  }
+
+  /* ---------- lista de participantes ---------- */
+  function renderPeople() {
+    const total = state.participants.size;
+    $('count').textContent = total;
+    $('countNote').textContent = total === 1 ? 'pessoa cadastrada' : 'pessoas cadastradas';
+    $('drawBtn').disabled = state.busy || total === 0;
+
+    const q = normalize($('search').value);
+    const list = $('people');
+    list.textContent = '';
+    let shown = 0;
+    let matches = 0;
+    const frag = document.createDocumentFragment();
+    for (const p of state.participants.values()) {
+      if (q && !normalize(p.name).includes(q)) continue;
+      matches++;
+      if (shown >= MAX_RENDER) continue;
+      shown++;
+      const li = document.createElement('li');
+      const span = document.createElement('span');
+      span.textContent = p.name;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.dataset.id = p.id;
+      btn.textContent = '×';
+      btn.setAttribute('aria-label', 'Remover ' + p.name + ' do sorteio');
+      li.append(span, btn);
+      frag.appendChild(li);
+    }
+    list.appendChild(frag);
+
+    const empty = $('peopleEmpty');
+    if (total === 0) {
+      empty.hidden = false;
+      empty.textContent = 'Ninguém por aqui ainda. Preencha a configuração e carregue os participantes.';
+    } else if (matches === 0) {
+      empty.hidden = false;
+      empty.textContent = 'Nenhum nome encontrado nessa busca.';
+    } else if (matches > shown) {
+      empty.hidden = false;
+      empty.textContent = 'Mostrando ' + shown + ' de ' + matches + ' nomes. Use a busca para achar alguém específico.';
+    } else {
+      empty.hidden = true;
+    }
+  }
+
+  $('people').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-id]');
+    if (!btn) return;
+    state.participants.delete(btn.dataset.id);
+    renderPeople();
+  });
+  $('search').addEventListener('input', renderPeople);
+
+  /* ---------- sorteio ---------- */
+  function resetTicket() {
+    const t = $('ticket');
+    t.className = 'ticket idle';
+    $('ticketLabel').textContent = 'O ganhador aparece aqui';
+    $('winner').textContent = '';
+    $('winnerLink').hidden = true;
+  }
+
+  function renderHistory() {
+    const box = $('history');
+    const ol = $('historyList');
+    ol.textContent = '';
+    box.hidden = state.winners.length === 0;
+    state.winners.forEach((w) => {
+      const li = document.createElement('li');
+      const s = document.createElement('span');
+      s.textContent = w.name;
+      li.appendChild(s);
+      ol.appendChild(li);
+    });
+  }
+
+  async function draw() {
+    if (state.busy) return;
+    const noRepeat = $('noRepeat').checked;
+    const won = new Set(state.winners.map((w) => w.id));
+    const pool = [...state.participants.values()].filter((p) => !noRepeat || !won.has(p.id));
+    if (pool.length === 0) {
+      setStatus(noRepeat && state.participants.size > 0
+        ? 'Todos os participantes já ganharam. Desmarque “Não repetir ganhadores” para sortear de novo.'
+        : 'Não há participantes para sortear.', 'error');
+      return;
+    }
+
+    const winner = pool[randInt(pool.length)];
+    state.busy = true;
+    $('drawBtn').disabled = true;
+    $('loadBtn').disabled = true;
+
+    const ticket = $('ticket');
+    ticket.className = 'ticket spinning';
+    $('ticketLabel').textContent = 'Sorteando…';
+    $('winnerLink').hidden = true;
+
+    if (!reducedMotion && pool.length > 1) {
+      let delay = 45;
+      const end = performance.now() + 2800;
+      while (performance.now() < end) {
+        $('winner').textContent = pool[randInt(pool.length)].name;
+        await sleep(delay);
+        delay *= 1.07;
+      }
+    }
+
+    ticket.className = 'ticket';
+    $('ticketLabel').textContent = 'Ganhador';
+    $('winner').textContent = winner.name;
+    const link = $('winnerLink');
+    link.href = 'https://www.youtube.com/channel/' + encodeURIComponent(winner.id);
+    link.hidden = false;
+
+    state.winners.push(winner);
+    renderHistory();
+    state.busy = false;
+    $('loadBtn').disabled = false;
+    $('drawBtn').disabled = state.participants.size === 0;
+    setStatus('', 'info');
+  }
+
+  $('loadBtn').addEventListener('click', loadParticipants);
+  $('drawBtn').addEventListener('click', draw);
+  renderPeople();
+})();
+</script>
+</body>
+</html>
